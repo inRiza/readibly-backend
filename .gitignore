@@ -1,0 +1,47 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.env
+*.venv
+venv/
+ENV/
+env/
+.Python
+*.sqlite3
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Virtual environment
+venv/
+.env/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+
+# Pytest
+.cache/
+
+# Mypy
+.mypy_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# PyInstaller
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Docker
+*.pid
