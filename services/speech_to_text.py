@@ -8,6 +8,7 @@ import subprocess
 import os
 import shutil
 import tempfile
+import platform
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +18,31 @@ class SpeechToTextService:
         self.recognizer.energy_threshold = 4000
         self.recognizer.dynamic_energy_threshold = True
         self.recognizer.pause_threshold = 0.8
-        self.ffmpeg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ffmpeg", "bin", "ffmpeg.exe")
+        
+        # Determine ffmpeg path based on platform
+        if platform.system() == "Windows":
+            self.ffmpeg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ffmpeg", "bin", "ffmpeg.exe")
+        else:
+            # On Linux (like in deployment), ffmpeg should be in the system PATH
+            self.ffmpeg_path = "ffmpeg"
+        
         self._check_ffmpeg()
 
     def _check_ffmpeg(self):
         """Check if ffmpeg is installed and accessible."""
-        if not os.path.exists(self.ffmpeg_path):
-            logger.error(f"FFmpeg not found at {self.ffmpeg_path}")
-            raise RuntimeError(
-                "FFmpeg is not found in the project directory. Please ensure ffmpeg is installed in the backend/ffmpeg/bin directory."
-            )
+        try:
+            if platform.system() == "Windows" and not os.path.exists(self.ffmpeg_path):
+                logger.error(f"FFmpeg not found at {self.ffmpeg_path}")
+                raise RuntimeError(
+                    "FFmpeg is not found in the project directory. Please ensure ffmpeg is installed in the backend/ffmpeg/bin directory."
+                )
+            else:
+                # Check if ffmpeg is available in PATH on Linux
+                subprocess.run([self.ffmpeg_path, "-version"], capture_output=True, check=True)
+                logger.info("FFmpeg found and working correctly")
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            logger.error(f"FFmpeg check failed: {str(e)}")
+            raise RuntimeError(f"FFmpeg is not accessible: {str(e)}")
 
     async def convert_audio_to_text(self, audio_file: UploadFile) -> str:
         temp_dir = None
@@ -108,4 +124,4 @@ class SpeechToTextService:
                     shutil.rmtree(temp_dir)
                     logger.info("Cleaned up temporary directory")
                 except Exception as e:
-                    logger.error(f"Error cleaning up temporary directory: {str(e)}") 
+                    logger.error(f"Error cleaning up temporary directory: {str(e)}")
