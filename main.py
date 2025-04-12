@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # Get allowed origins from environment variable or use default
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app").split(",")
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app,https://readibly-backend-production.up.railway.app").split(",")
 logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,  # Use environment variable
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
