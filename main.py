@@ -17,6 +17,14 @@ from database import engine, Base
 from models.user import User
 from dotenv import load_dotenv
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables
 load_dotenv()
 
 # Initialize database
@@ -31,13 +39,6 @@ def init_db():
 # Only initialize database if not in production
 if os.getenv("ENVIRONMENT") != "production":
     init_db()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -79,8 +80,13 @@ async def log_requests(request: Request, call_next):
     return response
 
 # Initialize services
-pdf_parser = PDFParser()
-tts = TextToSpeech()
+try:
+    pdf_parser = PDFParser()
+    tts = TextToSpeech()
+    logger.info("Services initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing services: {str(e)}")
+    raise
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
