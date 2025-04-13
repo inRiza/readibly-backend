@@ -11,7 +11,6 @@ import PyPDF2
 import io
 from dotenv import load_dotenv
 from routes.auth.router import router as auth_router
-from routes.speech_to_text import router as speech_to_text_router
 from database import Base, engine
 from models.user import User
 
@@ -83,7 +82,6 @@ if not os.path.exists(UPLOAD_DIR):
 
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(speech_to_text_router, prefix="/api", tags=["speech-to-text"])
 
 @app.post("/api/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
