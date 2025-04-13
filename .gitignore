@@ -7,7 +7,6 @@ __pycache__/
 *.venv
 venv/
 ENV/
-env/
 .Python
 *.sqlite3
 
@@ -45,3 +44,8 @@ htmlcov/
 
 # Docker
 *.pid
+
+# New additions
+*.py[cod]
+*$py.class
+*.db
