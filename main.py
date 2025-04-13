@@ -20,7 +20,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize database
-Base.metadata.create_all(bind=engine)
+def init_db():
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {str(e)}")
+        raise
+
+# Only initialize database if not in production
+if os.getenv("ENVIRONMENT") != "production":
+    init_db()
 
 # Configure logging
 logging.basicConfig(
