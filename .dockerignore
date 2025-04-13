@@ -1,3 +1,7 @@
+# Git
+.git
+.gitignore
+
 # Python
 __pycache__/
 *.py[cod]
@@ -30,23 +34,30 @@ ENV/
 *.swp
 *.swo
 
-# Git
-.git
-.gitignore
-
 # Logs
 *.log
+logs/
 
 # Local development
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.development
+.env.test
+.env.production
 
-# Database
+# Test
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+*.temp
+uploads/
 *.db
-*.sqlite3
-
-# Uploads
-uploads/ 
+*.sqlite
+*.sqlite3 

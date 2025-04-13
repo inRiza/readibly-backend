@@ -2,8 +2,6 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import uvicorn
-from services.pdf_parser import PDFParser
-from services.text_to_speech import TextToSpeech
 import os
 import json
 import logging
@@ -11,9 +9,6 @@ import shutil
 import uuid
 import PyPDF2
 import io
-from routes import speech_to_text, auth_router, speech_router
-from database import engine, Base
-from models.user import User
 from dotenv import load_dotenv
 
 # Configure logging first
@@ -26,19 +21,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Initialize database
-def init_db():
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {str(e)}")
-        raise
-
-# Only initialize database if not in production
-if os.getenv("ENVIRONMENT") != "production":
-    init_db()
-
+# Initialize FastAPI app
 app = FastAPI(
     title="Readibly API",
     description="API for Readibly application",
@@ -69,36 +52,14 @@ async def options_handler(path: str):
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Received {request.method} request to {request.url.path}")
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"Query params: {dict(request.query_params)}")
-    if request.method in ["POST", "PUT"]:
-        try:
-            body = await request.body()
-            logger.info(f"Request body: {body.decode()}")
-        except Exception as e:
-            logger.error(f"Error reading request body: {str(e)}")
-    
     response = await call_next(request)
     logger.info(f"Response status: {response.status_code}")
     return response
-
-# Initialize services
-try:
-    pdf_parser = PDFParser()
-    tts = TextToSpeech()
-    logger.info("Services initialized successfully")
-except Exception as e:
-    logger.error(f"Error initializing services: {str(e)}")
-    raise
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-
-# Include routers
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-app.include_router(speech_router, prefix="/api/speech", tags=["speech"])
 
 @app.post("/api/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -164,23 +125,6 @@ async def get_pdf(filename: str):
 @app.get("/")
 async def root():
     return {"message": "Welcome to Readibly API"}
-
-@app.post("/api/text-to-speech")
-async def text_to_speech(text: str):
-    try:
-        audio_path = tts.convert_to_speech(text)
-        return JSONResponse({
-            "status": "success",
-            "audio_path": audio_path
-        })
-    except Exception as e:
-        logger.error(f"Error converting text to speech: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-    logger.info("Application startup complete")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
