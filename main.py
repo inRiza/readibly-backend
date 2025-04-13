@@ -22,6 +22,7 @@ load_dotenv()
 # Initialize database
 Base.metadata.create_all(bind=engine)
 
+# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -55,6 +56,14 @@ async def options_handler(path: str):
 async def log_requests(request: Request, call_next):
     logger.info(f"Received {request.method} request to {request.url.path}")
     logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Query params: {dict(request.query_params)}")
+    if request.method in ["POST", "PUT"]:
+        try:
+            body = await request.body()
+            logger.info(f"Request body: {body.decode()}")
+        except Exception as e:
+            logger.error(f"Error reading request body: {str(e)}")
+    
     response = await call_next(request)
     logger.info(f"Response status: {response.status_code}")
     return response

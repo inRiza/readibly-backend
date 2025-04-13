@@ -56,35 +56,57 @@ def create_user(db: Session, user: UserCreate):
 # Authentication endpoints
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
+    logger.info(f"Register attempt for user: {user.email}")
     db_user_by_email = get_user_by_email(db, email=user.email)
     if db_user_by_email:
+        logger.warning(f"Email already registered: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
         
     db_user_by_username = get_user_by_username(db, username=user.username)
     if db_user_by_username:
+        logger.warning(f"Username already exists: {user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
         )
     
-    created_user = create_user(db=db, user=user)
-    return UserResponse(
-        id=created_user.id,
-        username=created_user.username,
-        email=created_user.email,
-        message="User created successfully. Please log in."
-    )
+    try:
+        created_user = create_user(db=db, user=user)
+        logger.info(f"User created successfully: {user.email}")
+        return UserResponse(
+            id=created_user.id,
+            username=created_user.username,
+            email=created_user.email,
+            message="User created successfully. Please log in."
+        )
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating account. Please try again."
+        )
 
 @router.post("/signup", response_model=UserResponse)
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
     """Alias for /register endpoint"""
+    logger.info(f"Signup attempt for user: {user.email}")
     return await register(user, db)
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info(f"Login attempt for email: {form_data.username}")
     user = get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user:
+        logger.warning(f"Login failed: User not found for email {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not verify_password(form_data.password, user.hashed_password):
+        logger.warning(f"Login failed: Incorrect password for email {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -95,6 +117,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
+    logger.info(f"Login successful for email: {form_data.username}")
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Current user dependency
