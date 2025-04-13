@@ -11,8 +11,7 @@ import shutil
 import uuid
 import PyPDF2
 import io
-from routes import speech_to_text
-from routes.auth import router as auth_router
+from routes import speech_to_text, auth_router, speech_router
 from database import engine, Base
 from models.user import User
 from dotenv import load_dotenv
@@ -40,7 +39,11 @@ def init_db():
 if os.getenv("ENVIRONMENT") != "production":
     init_db()
 
-app = FastAPI()
+app = FastAPI(
+    title="Readibly API",
+    description="API for Readibly application",
+    version="1.0.0"
+)
 
 # Get allowed origins from environment variable or use default
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app").split(",")
@@ -94,8 +97,8 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # Include routers
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(speech_to_text.router, prefix="/api", tags=["speech-to-text"])
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(speech_router, prefix="/api/speech", tags=["speech"])
 
 @app.post("/api/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -160,7 +163,7 @@ async def get_pdf(filename: str):
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Readibly API"}
+    return {"message": "Welcome to Readibly API"}
 
 @app.post("/api/text-to-speech")
 async def text_to_speech(text: str):
@@ -173,6 +176,11 @@ async def text_to_speech(text: str):
     except Exception as e:
         logger.error(f"Error converting text to speech: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+    logger.info("Application startup complete")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
