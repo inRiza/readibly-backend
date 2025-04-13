@@ -63,84 +63,40 @@ class SpeechToTextService:
             logger.error("Audio conversion failed: %s", str(e))
             raise
 
-    async def convert_audio_to_text(self, audio_file: UploadFile) -> str:
-        temp_dir = None
+    def convert_audio_to_text(self, audio_path: str) -> str:
+        """Convert audio file to text using Google Speech Recognition."""
         try:
-            # Read the audio file
-            audio_data = await audio_file.read()
-            logger.info(f"Read audio data: {len(audio_data)} bytes")
+            logger.info("Starting audio to text conversion for file: %s", audio_path)
             
-            # Create a temporary directory for processing
-            temp_dir = tempfile.mkdtemp()
-            logger.info(f"Created temporary directory: {temp_dir}")
-            
-            # Create a temporary file for the input audio
-            input_path = os.path.join(temp_dir, "temp_input.webm")
-            with open(input_path, "wb") as f:
-                f.write(audio_data)
-            
-            # Convert WebM to WAV using ffmpeg
-            output_path = os.path.join(temp_dir, "temp_output.wav")
-            logger.info("Converting audio format using ffmpeg...")
-            
-            try:
-                result = subprocess.run([
-                    self.ffmpeg_path, "-i", input_path,
-                    "-acodec", "pcm_s16le",
-                    "-ar", "16000",
-                    "-ac", "1",
-                    "-y",  # Overwrite output file if it exists
-                    output_path
-                ], check=True, capture_output=True, text=True)
-                logger.info("FFmpeg conversion successful")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"FFmpeg conversion error: {e.stderr}")
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to convert audio format"
-                )
-            
-            # Verify the output file exists and has content
-            if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to create valid audio file"
-                )
-            
-            # Use SpeechRecognition to convert audio to text
-            with sr.AudioFile(output_path) as source:
-                logger.info("Adjusting for ambient noise...")
-                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                
-                logger.info("Recording audio...")
-                audio = self.recognizer.record(source)
-                
-                logger.info("Converting speech to text...")
+            # Convert WebM to WAV if needed
+            if audio_path.endswith('.webm'):
+                wav_path = self._convert_webm_to_wav(audio_path)
                 try:
-                    text = self.recognizer.recognize_google(audio, language='en-US')
-                    logger.info(f"Successfully converted speech to text: {text[:100]}...")
+                    with sr.AudioFile(wav_path) as source:
+                        logger.info("Reading audio file: %s", wav_path)
+                        audio = self.recognizer.record(source)
+                        logger.info("Audio recorded, starting recognition")
+                        text = self.recognizer.recognize_google(audio)
+                        logger.info("Recognition successful")
+                        return text
+                finally:
+                    if os.path.exists(wav_path):
+                        os.remove(wav_path)
+                        logger.info("Cleaned up temporary WAV file")
+            else:
+                with sr.AudioFile(audio_path) as source:
+                    logger.info("Reading audio file: %s", audio_path)
+                    audio = self.recognizer.record(source)
+                    logger.info("Audio recorded, starting recognition")
+                    text = self.recognizer.recognize_google(audio)
+                    logger.info("Recognition successful")
                     return text
-                except sr.UnknownValueError:
-                    logger.error("Speech recognition could not understand audio")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Could not understand audio. Please speak more clearly."
-                    )
-                except sr.RequestError as e:
-                    logger.error(f"Speech recognition service error: {str(e)}")
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Could not request results from speech recognition service"
-                    )
-                
+        except sr.UnknownValueError:
+            logger.error("Speech recognition could not understand audio")
+            raise RuntimeError("Could not understand the audio")
+        except sr.RequestError as e:
+            logger.error("Speech recognition service error: %s", str(e))
+            raise RuntimeError(f"Speech recognition service error: {str(e)}")
         except Exception as e:
-            logger.error(f"Unexpected error in speech-to-text conversion: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to convert speech to text")
-        finally:
-            # Clean up temporary files
-            if temp_dir and os.path.exists(temp_dir):
-                try:
-                    shutil.rmtree(temp_dir)
-                    logger.info("Cleaned up temporary directory")
-                except Exception as e:
-                    logger.error(f"Error cleaning up temporary directory: {str(e)}")
+            logger.error("Unexpected error during speech recognition: %s", str(e))
+            raise RuntimeError(f"Failed to convert audio to text: {str(e)}")
