@@ -43,21 +43,29 @@ app = FastAPI(
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app").split(",")
 logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
-# Configure CORS
+# Configure CORS with more specific settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=600  # Cache preflight requests for 10 minutes
 )
 
-# Add OPTIONS handler for preflight requests
+# Add OPTIONS handler for all routes
 @app.options("/{path:path}")
 async def options_handler(path: str):
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "600"
+        }
+    }
 
 # Add logging middleware
 @app.middleware("http")
