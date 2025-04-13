@@ -41,13 +41,15 @@ app = FastAPI(
 )
 
 # Get allowed origins from environment variable or use default
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app").split(",")
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app,https://readibly-backend-production.up.railway.app")
+allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",")]
 logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
 # Configure CORS with more specific settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all vercel.app subdomains
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -55,18 +57,15 @@ app.add_middleware(
     max_age=600  # Cache preflight requests for 10 minutes
 )
 
-# Add OPTIONS handler for all routes
+# Improved OPTIONS handler with proper response
 @app.options("/{path:path}")
 async def options_handler(path: str):
-    return {
-        "status": "ok",
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "600"
-        }
-    }
+    response = JSONResponse(content={"status": "ok"})
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+    response.headers["Access-Control-Max-Age"] = "600"
+    return response
 
 # Add logging middleware
 @app.middleware("http")

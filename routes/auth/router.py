@@ -9,14 +9,10 @@ from models.user import User
 from .utils import verify_password, get_password_hash, create_access_token, Token, ACCESS_TOKEN_EXPIRE_MINUTES
 import logging
 
-router = APIRouter(tags=["auth"])
+# Remove the tags parameter to inherit CORS settings from the main app
+router = APIRouter()
 
 logger = logging.getLogger(__name__)
-
-# Add OPTIONS handler for all routes
-@router.options("/{path:path}")
-async def options_handler(path: str):
-    return {"status": "ok"}
 
 # Dependency to get the database session
 def get_db():
@@ -39,7 +35,7 @@ class UserResponse(UserBase):
     message: str = "User created successfully. Please log in."
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode in Pydantic v2
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
