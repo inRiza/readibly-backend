@@ -10,10 +10,10 @@ import uuid
 import PyPDF2
 import io
 from dotenv import load_dotenv
-from routes.auth.router import router as auth_router
-from routes.speech_to_text import router as speech_to_text_router
-from database import Base, engine
-from models.user import User
+from readibly_backend.routes.auth.router import router as auth_router
+from readibly_backend.routes.speech_to_text import router as speech_to_text_router
+from readibly_backend.database import Base, engine
+from readibly_backend.models.user import User
 
 # Configure logging first
 logging.basicConfig(

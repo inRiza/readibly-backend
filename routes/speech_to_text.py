@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.speech_to_text import SpeechToTextService
+from readibly_backend.services.speech_to_text import SpeechToTextService
 import logging
 
 logger = logging.getLogger(__name__)
