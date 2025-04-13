@@ -4,37 +4,34 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+speech_to_text_service = SpeechToTextService()
 
-# Initialize the service only when needed
-def get_speech_service():
-    try:
-        return SpeechToTextService()
-    except Exception as e:
-        logger.error(f"Failed to initialize speech service: {str(e)}")
-        raise HTTPException(status_code=500, detail="Speech-to-text service is not available")
-
-@router.post("/speech-to-text")
+@router.post("/api/speech-to-text")
 async def convert_speech_to_text(audio: UploadFile = File(...)):
-    """
-    Convert uploaded audio file to text using speech recognition.
-    """
     try:
-        logger.info(f"Received audio file: {audio.filename}")
+        logger.info("Received speech-to-text request")
         
-        if not audio.filename.endswith('.webm'):
-            logger.warning(f"Invalid file type received: {audio.filename}")
-            raise HTTPException(status_code=400, detail="Only WebM files are supported")
+        # Validate file type
+        if not audio.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload an audio file.")
         
-        # Initialize service only when needed
-        speech_service = get_speech_service()
+        # Save the uploaded file temporarily
+        temp_file_path = f"temp_{audio.filename}"
+        with open(temp_file_path, "wb") as buffer:
+            content = await audio.read()
+            buffer.write(content)
         
-        logger.info("Starting speech-to-text conversion")
-        text = await speech_service.convert_audio_to_text(audio)
-        logger.info("Successfully converted speech to text")
-        return {"text": text}
-    except HTTPException as e:
-        # Re-raise HTTP exceptions as they are
-        raise e
+        try:
+            # Convert audio to text
+            text = speech_to_text_service.convert_audio_to_text(temp_file_path)
+            logger.info("Successfully converted audio to text")
+            return {"text": text}
+        finally:
+            # Clean up the temporary file
+            import os
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+                logger.info("Cleaned up temporary audio file")
     except Exception as e:
-        logger.error(f"Unexpected error in speech-to-text conversion: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process speech-to-text request") 
+        logger.error(f"Error in speech-to-text conversion: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e)) 

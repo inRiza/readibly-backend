@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from routes.auth.router import router as auth_router
 from database import Base, engine
 from models.user import User
+from routes import speech_to_text
 
 # Configure logging first
 logging.basicConfig(
@@ -82,6 +83,7 @@ if not os.path.exists(UPLOAD_DIR):
 
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(speech_to_text.router)
 
 @app.post("/api/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
