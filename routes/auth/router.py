@@ -13,6 +13,11 @@ router = APIRouter(tags=["auth"])
 
 logger = logging.getLogger(__name__)
 
+# Add OPTIONS handler for all routes
+@router.options("/{path:path}")
+async def options_handler(path: str):
+    return {"status": "ok"}
+
 # Dependency to get the database session
 def get_db():
     db = SessionLocal()
@@ -36,7 +41,7 @@ class UserResponse(UserBase):
     class Config:
         orm_mode = True
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # Helper functions
 def get_user_by_username(db: Session, username: str):

@@ -10,6 +10,8 @@ import uuid
 import PyPDF2
 import io
 from dotenv import load_dotenv
+from routes.auth.router import router as auth_router
+from database import Base, engine
 
 # Configure logging first
 logging.basicConfig(
@@ -20,6 +22,15 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
+
+# Initialize database
+def init_db():
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {str(e)}")
+        raise
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -37,7 +48,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=600  # Cache preflight requests for 10 minutes
@@ -60,6 +71,9 @@ async def log_requests(request: Request, call_next):
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+# Include routers
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 
 @app.post("/api/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -125,6 +139,11 @@ async def get_pdf(filename: str):
 @app.get("/")
 async def root():
     return {"message": "Welcome to Readibly API"}
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+    logger.info("Application startup complete")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
