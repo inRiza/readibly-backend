@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import uvicorn
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # Get allowed origins from environment variable or use default
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app,https://readibly-frontend.vercel.app,https://readibly-backend-production.up.railway.app").split(",")
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://readibly.vercel.app").split(",")
 logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
 # Configure CORS
@@ -43,6 +43,15 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# Add logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Received {request.method} request to {request.url.path}")
+    logger.info(f"Headers: {dict(request.headers)}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 # Initialize services
 pdf_parser = PDFParser()
