@@ -1,5 +1,14 @@
 # Readibly Backend
 
+## Our team
+
+Hackteunnn:
+
+- Muhammad Fadhlan Karimuddin
+- Muhammad Rizain Firdaus
+- Stefanny Josefina Santono
+
+
 This is the backend service for Readibly, providing PDF parsing, eye tracking, and text-to-speech functionality.
 
 ## Features
