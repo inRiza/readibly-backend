@@ -11,3 +11,4 @@ PyPDF2==3.0.1
 pytest==7.4.3
 httpx==0.25.1
 psycopg2-binary==2.9.9
+SpeechRecognition==3.10.0

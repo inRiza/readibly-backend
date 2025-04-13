@@ -26,6 +26,7 @@ class SpeechToTextService:
             # On Linux (like in deployment), ffmpeg should be in the system PATH
             self.ffmpeg_path = "ffmpeg"
         
+        logger.info(f"Initializing SpeechToTextService with ffmpeg path: {self.ffmpeg_path}")
         self._check_ffmpeg()
 
     def _check_ffmpeg(self):
@@ -38,8 +39,8 @@ class SpeechToTextService:
                 )
             else:
                 # Check if ffmpeg is available in PATH on Linux
-                subprocess.run([self.ffmpeg_path, "-version"], capture_output=True, check=True)
-                logger.info("FFmpeg found and working correctly")
+                result = subprocess.run([self.ffmpeg_path, "-version"], capture_output=True, check=True, text=True)
+                logger.info(f"FFmpeg version: {result.stdout.splitlines()[0]}")
         except (subprocess.SubprocessError, FileNotFoundError) as e:
             logger.error(f"FFmpeg check failed: {str(e)}")
             raise RuntimeError(f"FFmpeg is not accessible: {str(e)}")
@@ -59,6 +60,7 @@ class SpeechToTextService:
             input_path = os.path.join(temp_dir, "temp_input.webm")
             with open(input_path, "wb") as f:
                 f.write(audio_data)
+            logger.info(f"Saved input audio to: {input_path}")
             
             # Convert WebM to WAV using ffmpeg
             output_path = os.path.join(temp_dir, "temp_output.wav")
@@ -73,19 +75,30 @@ class SpeechToTextService:
                     "-y",  # Overwrite output file if it exists
                     output_path
                 ], check=True, capture_output=True, text=True)
-                logger.info("FFmpeg conversion successful")
+                logger.info(f"FFmpeg conversion successful. Output: {result.stdout}")
             except subprocess.CalledProcessError as e:
-                logger.error(f"FFmpeg conversion error: {e.stderr}")
+                logger.error(f"FFmpeg conversion error. Stderr: {e.stderr}, Stdout: {e.stdout}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"Failed to convert audio format: {e.stderr}"
                 )
             
             # Verify the output file exists and has content
-            if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            if not os.path.exists(output_path):
+                logger.error(f"Output file not found at: {output_path}")
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to create valid audio file"
+                    detail="Failed to create output audio file"
+                )
+            
+            file_size = os.path.getsize(output_path)
+            logger.info(f"Output file size: {file_size} bytes")
+            
+            if file_size == 0:
+                logger.error("Output file is empty")
+                raise HTTPException(
+                    status_code=500,
+                    detail="Created empty audio file"
                 )
             
             # Use SpeechRecognition to convert audio to text
@@ -115,7 +128,7 @@ class SpeechToTextService:
                     )
                 
         except Exception as e:
-            logger.error(f"Unexpected error in speech-to-text conversion: {str(e)}")
+            logger.error(f"Unexpected error in speech-to-text conversion: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
         finally:
             # Clean up temporary files
