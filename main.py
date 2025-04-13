@@ -12,6 +12,7 @@ import io
 from dotenv import load_dotenv
 from routes.auth.router import router as auth_router
 from database import Base, engine
+from models.user import User
 
 # Configure logging first
 logging.basicConfig(
