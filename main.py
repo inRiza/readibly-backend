@@ -39,10 +39,16 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
+    max_age=600  # Cache preflight requests for 10 minutes
 )
+
+# Add OPTIONS handler for preflight requests
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"status": "ok"}
 
 # Add logging middleware
 @app.middleware("http")
