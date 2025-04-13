@@ -3,10 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 # Only use check_same_thread for SQLite connections
-if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith('sqlite'):
+if SQLALCHEMY_DATABASE_URL.startswith('sqlite'):
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
     )
