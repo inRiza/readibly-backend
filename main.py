@@ -27,37 +27,11 @@ load_dotenv()
 # Initialize database
 def init_db():
     try:
-        logger.info(f"Starting database initialization with URL: {engine.url}")
-        # Log which tables are being created
-        tables = [table.__tablename__ for table in Base.__subclasses__()]
-        logger.info(f"Attempting to create tables: {tables}")
-        
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
-        
-        # Verify tables were created by running a database-specific query
-        with engine.connect() as conn:
-            if 'sqlite' in str(engine.url).lower():
-                # SQLite query to list tables
-                query = "SELECT name FROM sqlite_master WHERE type='table'"
-                from sqlalchemy import text
-                result = conn.execute(text(query))
-                created_tables = [row[0] for row in result]
-                logger.info(f"Tables in SQLite database: {created_tables}")
-            elif 'postgresql' in str(engine.url).lower():
-                # PostgreSQL query to list tables
-                query = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
-                from sqlalchemy import text
-                result = conn.execute(text(query))
-                created_tables = [row[0] for row in result]
-                logger.info(f"Tables in PostgreSQL database: {created_tables}")
-            else:
-                logger.info("Database type not recognized for table verification")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        # Don't raise the exception to allow the app to continue starting
+        raise
 
 # Initialize FastAPI app
 app = FastAPI(
