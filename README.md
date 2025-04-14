@@ -1,17 +1,19 @@
-# Readibly Backend
+# 📘 Readibly Backend
 
-## Our team
+## 🤝 Tim Hackteunnn
 
-Hackteunnn:
-
+### Anggota:
 - Muhammad Fadhlan Karimuddin
 - Muhammad Rizain Firdaus
 - Stefanny Josefina Santono
 
+## 💡 Brief Explanation
+Readibly Backend adalah layanan unggulan yang mengintegrasikan pemrosesan PDF, pelacakan mata, dan konversi teks ke suara. Produk ini dirancang untuk meningkatkan aksesibilitas informasi dengan API yang mudah diintegrasikan dan fitur canggih seperti analisis mata secara real-time.
 
-This is the backend service for Readibly, providing PDF parsing, eye tracking, and text-to-speech functionality.
+## 🌐 Frontend Repository
+[Readibly/readibly-frontend](https://github.com/Readibly/readibly-frontend)
 
-## Features
+## 🔍 Features
 
 - PDF parsing and text extraction
 - Eye tracking using webcam
@@ -79,4 +81,4 @@ backend/
 
 - The eye tracking feature requires a webcam
 - PDF parsing supports standard PDF files
-- Text-to-speech audio files are automatically cleaned up after 24 hours 
+- Text-to-speech audio files are automatically cleaned up after 24 hours
